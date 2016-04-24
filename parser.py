@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # transition-based (incremental) AMR parser
 # author Chuan Wang

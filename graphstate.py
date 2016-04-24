@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # parsing state representing a subgraph
 # initialized with dependency graph

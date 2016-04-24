@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import sys,argparse,re,os
 from stanfordnlp.corenlp import *
 from common.AMRGraph import *

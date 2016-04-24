@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Implementation of the configuration in transition-based AMR parsing
 # author Chuan Wang
