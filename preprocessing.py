@@ -383,7 +383,7 @@ def batch_preprocess(document_root):
     proc.setup()
     if os.path.isdir(document_root):
         print >> log, "Can not read %s" % document_root
-    for doc in os.lsdir(document_root):
+    for doc in os.listdir(document_root):
         if os.path.isfile(doc) and doc.endswith('.txt'):
             preprocess(amr_file=doc,proc1=proc,START_SNLP=False,INPUT_AMR=False)
 '''
