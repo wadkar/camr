@@ -230,7 +230,7 @@ def _add_dependency(instances,result,FORMAT="stanford"):
     else:
         raise ValueError("Unknown dependency format!")
 
-def preprocess(input_file,START_SNLP=True,INPUT_AMR=True):
+def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
     '''nasty function'''
     tmp_sent_filename = None
     instances = None
@@ -250,8 +250,9 @@ def preprocess(input_file,START_SNLP=True,INPUT_AMR=True):
             _write_sentences(tmp_sent_filename,sentences)
 
 
-        print >> log, "Start Stanford CoreNLP..."
-        proc1 = StanfordCoreNLP()
+        if proc1 == None:
+            print >> log, "Start Stanford CoreNLP..."
+            proc1 = StanfordCoreNLP()
 
         # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
         if START_SNLP: proc1.setup()
