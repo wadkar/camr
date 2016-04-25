@@ -384,7 +384,8 @@ def batch_preprocess(document_root):
     if not os.path.isdir(document_root):
         print >> log, "Can not read %s" % document_root
     for doc in os.listdir(document_root):
-        if os.path.isfile(doc) and doc.endswith('.txt'):
+        if os.path.isfile(os.path.join(document_root, doc)) \
+           and doc.endswith('.txt'):
             print >> log, "Preprocessing %s" % doc
             preprocess(amr_file=doc,proc1=proc,START_SNLP=False,INPUT_AMR=False)
         else:
