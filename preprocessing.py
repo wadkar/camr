@@ -377,6 +377,13 @@ def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
 
         
     return instances
+
+def batch_preprocess(document_root):
+    proc = StanfordCoreNLP()
+    proc.setup()
+    for doc in os.lsdir(document_root):
+        if os.path.isfile(doc) and doc.endswith('.txt'):
+            preprocess(amr_file=doc,proc1=proc,START_SNLP=False,INPUT_AMR=False)
 '''
 def _init_instances(sent_file,amr_strings,comments):
     print >> log, "Preprocess 1:pos, ner and dependency using stanford parser..."

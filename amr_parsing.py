@@ -133,7 +133,7 @@ def main():
     #arg_parser.add_argument('-i','--input_file',help='the input: preprocessed data instances file for aligner or training')
     arg_parser.add_argument('-d','--dev',help='development file')
     arg_parser.add_argument('-as','--actionset',choices=['basic'],default='basic',help='choose different action set')
-    arg_parser.add_argument('-m','--mode',choices=['preprocess','test_gold_graph','align','userGuide','oracleGuide','train','parse','eval'],help="preprocess:generate pos tag, dependency tree, ner\n" "align:do alignment between AMR graph and sentence string")
+    arg_parser.add_argument('-m','--mode',choices=['preprocess','batch_preprocess','test_gold_graph','align','userGuide','oracleGuide','train','parse','eval'],help="preprocess:generate pos tag, dependency tree, ner\n" "batch_preprocess:preprocess all the files with '.txt' extension in given directory\n" "align:do alignment between AMR graph and sentence string")
     arg_parser.add_argument('-dp','--depparser',choices=['stanford','stanfordConvert','stdconv+charniak','clear','mate','turbo'],default='stdconv+charniak',help='choose the dependency parser')
     arg_parser.add_argument('--coref',action='store_true',help='flag to enable coreference information')
     arg_parser.add_argument('--prop',action='store_true',help='flag to enable semantic role labeling information')
@@ -158,6 +158,9 @@ def main():
     if args.mode == 'preprocess':
         instances = preprocess(amr_file,START_SNLP=True,INPUT_AMR=args.amrfmt)
         print "Done preprocessing!"
+    # do batch preprocess
+    elif args.mode == 'batch_preprocess':
+        batch_preprocess(amr_file)
     # preprocess the JAMR aligned amr
     elif args.mode == 'test_gold_graph':     
         instances = preprocess(amr_file,False)
