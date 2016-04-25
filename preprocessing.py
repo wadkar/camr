@@ -284,8 +284,9 @@ def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
         # input file is sentence
         tmp_sent_filename = input_file 
 
-        print >> log, "Start Stanford CoreNLP ..."
-        proc1 = StanfordCoreNLP()
+        if proc1 == None:
+            print >> log, "Start Stanford CoreNLP..."
+            proc1 = StanfordCoreNLP()
 
         # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
         if START_SNLP: proc1.setup()
