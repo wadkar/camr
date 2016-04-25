@@ -387,7 +387,7 @@ def batch_preprocess(document_root):
         if os.path.isfile(os.path.join(document_root, doc)) \
            and doc.endswith('.txt'):
             print >> log, "Preprocessing %s" % doc
-            preprocess(amr_file=doc,proc1=proc,START_SNLP=False,INPUT_AMR=False)
+            preprocess(input_file=doc,proc1=proc,START_SNLP=False,INPUT_AMR=False)
         else:
             print >> log, "Ignoring %s" % doc
 '''
