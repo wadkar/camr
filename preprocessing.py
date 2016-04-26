@@ -230,7 +230,8 @@ def _add_dependency(instances,result,FORMAT="stanford"):
     else:
         raise ValueError("Unknown dependency format!")
 
-def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
+def preprocess(input_file,stanford_proc=None,charniak_proc=None,
+               START_SNLP=True,INPUT_AMR=True):
     '''nasty function'''
     tmp_sent_filename = None
     instances = None
@@ -250,9 +251,11 @@ def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
             _write_sentences(tmp_sent_filename,sentences)
 
 
-        if proc1 == None:
+        if stanford_proc == None:
             print >> log, "Start Stanford CoreNLP..."
             proc1 = StanfordCoreNLP()
+        else:
+            proc1 = stanford_proc
 
         # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
         if START_SNLP: proc1.setup()
@@ -284,9 +287,11 @@ def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
         # input file is sentence
         tmp_sent_filename = input_file 
 
-        if proc1 == None:
+        if stanford_proc == None:
             print >> log, "Start Stanford CoreNLP..."
             proc1 = StanfordCoreNLP()
+        else:
+            proc1 = stanford_proc
 
         # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
         if START_SNLP: proc1.setup()
@@ -324,7 +329,10 @@ def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
     elif constants.FLAG_DEPPARSER == "stdconv+charniak":
         dep_filename = tok_sent_filename+'.charniak.parse.dep'
         if not os.path.exists(dep_filename):
-            dparser = CharniakParser()
+            if charniak_proc is not None:
+                dparser = charniak_proc
+            else:
+                dparse = CharniakParser()
             dparser.parse(tok_sent_filename)
             #raise IOError('Converted dependency file %s not founded' % (dep_filename))
         print 'Read dependency file %s...' % (dep_filename)
@@ -378,18 +386,21 @@ def preprocess(input_file,proc1=None,START_SNLP=True,INPUT_AMR=True):
         
     return instances
 
-def batch_preprocess(document_root):
-    proc = StanfordCoreNLP()
-    proc.setup()
+def batch_preprocess(document_root, mem):
+    stanford_proc = StanfordCoreNLP()
+    stanford_proc.setup()
+    charniak_proc = CharniakParser(mem=mem)
     if not os.path.isdir(document_root):
         print >> log, "Can not read %s" % document_root
     for doc_name in os.listdir(document_root):
         doc_path = os.path.join(document_root, doc_name)
         if os.path.isfile(doc_path) and doc_name.endswith('.txt'):
             print >> log, "Preprocessing %s" % doc_path
-            preprocess(input_file=doc_path,proc1=proc,START_SNLP=False,INPUT_AMR=False)
+            preprocess(input_file=doc_path,
+                       stanford_proc=stanford_proc,charniak_proc=charniak_proc,
+                       START_SNLP=False,INPUT_AMR=False)
         else:
-            print >> log, "Ignoring %s" % doc
+            print >> log, "Ignoring %s" % doc_path
 '''
 def _init_instances(sent_file,amr_strings,comments):
     print >> log, "Preprocess 1:pos, ner and dependency using stanford parser..."

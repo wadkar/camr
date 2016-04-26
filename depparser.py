@@ -15,24 +15,35 @@ class DepParser(object):
 
 class CharniakParser(DepParser):
     
+    def __init__(self,mem=None,rrp=None):
+        if mem is not None:
+            self.parse_wrapper = mem.cache(self.parse_wrapper)
+        if rrp is not None:
+            self._rrp = rrp
+        else:
+            from bllipparser.ModelFetcher import download_and_install_model
+            from bllipparser import RerankingParser
+            #path_to_model = './bllip-parser/models/WSJ+Gigaword'
+            #if not.path.exists(path_to_model):
+            model_type = 'WSJ+Gigaword'
+            path_to_model = download_and_install_model(model_type,'./bllip-parser/models')
+            print "Loading Charniak parser model: %s ..." % (model_type)
+            self._rrp = RerankingParser.from_unified_model_dir(path_to_model)
+
+    def parse_wrapper(self, document):
+        return self._rrp.simple_parse(document)
+
     def parse(self,sent_filename):
         """
         use Charniak parser to parse sentences then convert results to Stanford Dependency
         """
-        from bllipparser.ModelFetcher import download_and_install_model
-        from bllipparser import RerankingParser
-        #path_to_model = './bllip-parser/models/WSJ+Gigaword'
-        #if not.path.exists(path_to_model):
-        model_type = 'WSJ+Gigaword'
-        path_to_model = download_and_install_model(model_type,'./bllip-parser/models')
-        print "Loading Charniak parser model: %s ..." % (model_type)
-        rrp = RerankingParser.from_unified_model_dir(path_to_model)
         print "Begin Charniak parsing ..."
         parsed_filename = sent_filename+'.charniak.parse'
         parsed_trees = ''
         with open(sent_filename,'r') as f:
             for l in f:
-                parsed_trees += rrp.simple_parse(l.strip().split())
+                parsed_trees += self.parse_wrapper(l.strip().split())
+                #parsed_trees += rrp.simple_parse(l.strip().split())
                 parsed_trees += '\n'
 
         with open(parsed_filename,'w') as of:

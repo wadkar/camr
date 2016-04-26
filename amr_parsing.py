@@ -144,6 +144,7 @@ def main():
     arg_parser.add_argument('--amrfmt',action='store_true',help='specifying the input file is AMR annotation file')
     arg_parser.add_argument('-e','--eval',nargs=2,help='Error Analysis: give parsed AMR file and gold AMR file')
     arg_parser.add_argument('--section',choices=['proxy','all'],default='all',help='choose section of the corpus. Only works for LDC2014T12 dataset.')
+    arg_parser.add_argument('--cache-dir', default=None, required=False)
 
     args = arg_parser.parse_args()
 
@@ -160,7 +161,12 @@ def main():
         print "Done preprocessing!"
     # do batch preprocess
     elif args.mode == 'batch_preprocess':
-        batch_preprocess(amr_file)
+        try:
+            from joblib import Memory
+            mem = Memory(cachedir=args.cache_dir, verbose=0)
+        except:
+            mem = None
+        batch_preprocess(amr_file, mem)
     # preprocess the JAMR aligned amr
     elif args.mode == 'test_gold_graph':     
         instances = preprocess(amr_file,False)
