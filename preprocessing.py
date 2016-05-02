@@ -231,7 +231,7 @@ def _add_dependency(instances,result,FORMAT="stanford"):
         raise ValueError("Unknown dependency format!")
 
 def preprocess(input_file,stanford_proc=None,charniak_proc=None,
-               START_SNLP=True,INPUT_AMR=True):
+               use_cached_stanford=False,START_SNLP=True,INPUT_AMR=True):
     '''nasty function'''
     tmp_sent_filename = None
     instances = None
@@ -250,16 +250,18 @@ def preprocess(input_file,stanford_proc=None,charniak_proc=None,
         if not os.path.exists(tmp_sent_filename): # write sentences into file
             _write_sentences(tmp_sent_filename,sentences)
 
+        if not use_cached_stanford:
+            if stanford_proc == None:
+                print >> log, "Start Stanford CoreNLP..."
+                proc1 = StanfordCoreNLP()
+            else:
+                proc1 = stanford_proc
 
-        if stanford_proc == None:
-            print >> log, "Start Stanford CoreNLP..."
-            proc1 = StanfordCoreNLP()
+            # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
+            if START_SNLP: proc1.setup()
+            instances = proc1.parse(tmp_sent_filename)
         else:
-            proc1 = stanford_proc
-
-        # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
-        if START_SNLP: proc1.setup()
-        instances = proc1.parse(tmp_sent_filename)
+            instances = stanford_cached_parse(tmp_sentence_file)
 
         tok_sent_filename = tmp_sent_filename+'.tok' # write tokenized sentence file
         if not os.path.exists(tok_sent_filename):
@@ -287,15 +289,18 @@ def preprocess(input_file,stanford_proc=None,charniak_proc=None,
         # input file is sentence
         tmp_sent_filename = input_file 
 
-        if stanford_proc == None:
-            print >> log, "Start Stanford CoreNLP..."
-            proc1 = StanfordCoreNLP()
-        else:
-            proc1 = stanford_proc
+        if not use_cached_stanford:
+            if stanford_proc == None:
+                print >> log, "Start Stanford CoreNLP..."
+                proc1 = StanfordCoreNLP()
+            else:
+                proc1 = stanford_proc
 
-        # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
-        if START_SNLP: proc1.setup()
-        instances = proc1.parse(tmp_sent_filename)
+            # preprocess 1: tokenization, POS tagging and name entity using Stanford CoreNLP
+            if START_SNLP: proc1.setup()
+            instances = proc1.parse(tmp_sent_filename)
+        else:
+            instances = stanford_cached_parse(tmp_sent_filename)
 
         tok_sent_filename = tmp_sent_filename+'.tok' # write tokenized sentence file
         if not os.path.exists(tok_sent_filename):
@@ -386,21 +391,76 @@ def preprocess(input_file,stanford_proc=None,charniak_proc=None,
         
     return instances
 
-def batch_preprocess(document_root, mem):
-    stanford_proc = StanfordCoreNLP()
-    stanford_proc.setup()
+from joblib import Memory
+real_stanford_proc = StanfordCoreNLP()
+real_stanford_proc.setup()
+memory = Memory(cachedir='../../temp/cache', verbose=0)
+
+@memory.cache
+def stanford_cached_parse_call(text):
+    return real_stanford_proc._parse(text)
+
+def stanford_cached_parse(sent_filename):
+    """
+    This function takes a text string, sends it to the Stanford CoreNLP,
+    reads in the result, parses the results and returns a list
+    of data instances for each parsed sentence. Dependency parsing may operate
+    seperately for easy changing dependency parser.
+    """
+    instances = []
+    prp_filename = sent_filename+'.prp' # preprocessed file
+    #tok_filename = sent_filename + '.tok' # tokenized sentences
+    if os.path.exists(prp_filename):
+        #output_tok = open(tok_filename,'w')
+        print 'Read token,lemma,name entity file %s...' % (prp_filename)
+        prp_result = open(prp_filename,'r').read()
+
+        for result in prp_result.split('-'*40)[1:]:
+            try:
+                data = parse_parser_results(result)
+            except Exception, e:
+                if VERBOSE: print traceback.format_exc()
+                raise e
+            #output_tok.write("%s\n" % (' '.join(data.get_tokenized_sent())))
+            instances.append(data)
+        #output_tok.close()
+    else:
+        output_prp = open(prp_filename,'w')
+        #output_tok = open(tok_filename,'w')
+        for i,line in enumerate(open(sent_filename,'r').readlines()):
+            result = stanford_cached_parse_call(line)
+            output_prp.write("%s\n%s"%('-'*40,result))
+            try:
+                data = parse_parser_results(result)
+            except Exception, e:
+                if VERBOSE: print traceback.format_exc()
+                raise e
+            #output_tok.write("%s\n" % (' '.join(data.get_tokenized_sent())))
+            instances.append(data)
+        output_prp.close()
+        #output_tok.close()
+    return instances
+
+def gen_instances_path(document_root, mem):
+    print >> log, "generating instances for files in %s" % document_root
     charniak_proc = CharniakParser(mem=mem)
     if not os.path.isdir(document_root):
         print >> log, "Can not read %s" % document_root
+        yield []
     for doc_name in os.listdir(document_root):
         doc_path = os.path.join(document_root, doc_name)
         if os.path.isfile(doc_path) and doc_name.endswith('.txt'):
             print >> log, "Preprocessing %s" % doc_path
-            preprocess(input_file=doc_path,
-                       stanford_proc=stanford_proc,charniak_proc=charniak_proc,
-                       START_SNLP=False,INPUT_AMR=False)
+            instances = preprocess(input_file=doc_path,
+                                   stanford_proc=real_stanford_proc,
+                                   charniak_proc=charniak_proc,
+                                   use_cached_stanford=True,
+                                   START_SNLP=False,INPUT_AMR=False)
+            print >> log, "Done preprocessing, now yielding %s" % doc_path
+            yield [instances, doc_path]
         else:
             print >> log, "Ignoring %s" % doc_path
+
 '''
 def _init_instances(sent_file,amr_strings,comments):
     print >> log, "Preprocess 1:pos, ner and dependency using stanford parser..."

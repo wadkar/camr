@@ -133,7 +133,7 @@ def main():
     #arg_parser.add_argument('-i','--input_file',help='the input: preprocessed data instances file for aligner or training')
     arg_parser.add_argument('-d','--dev',help='development file')
     arg_parser.add_argument('-as','--actionset',choices=['basic'],default='basic',help='choose different action set')
-    arg_parser.add_argument('-m','--mode',choices=['preprocess','batch_preprocess','test_gold_graph','align','userGuide','oracleGuide','train','parse','eval'],help="preprocess:generate pos tag, dependency tree, ner\n" "batch_preprocess:preprocess all the files with '.txt' extension in given directory\n" "align:do alignment between AMR graph and sentence string")
+    arg_parser.add_argument('-m','--mode',choices=['preprocess','batch_preprocess','test_gold_graph','align','userGuide','oracleGuide','train','parse','batch_parse','eval'],help="preprocess:generate pos tag, dependency tree, ner\n" "batch_preprocess:preprocess all the files with '.txt' extension in given directory\n" "batch_parse:parse all the files with '*.txt' extension in given directory assuming preprocessing is done\n" "align:do alignment between AMR graph and sentence string")
     arg_parser.add_argument('-dp','--depparser',choices=['stanford','stanfordConvert','stdconv+charniak','clear','mate','turbo'],default='stdconv+charniak',help='choose the dependency parser')
     arg_parser.add_argument('--coref',action='store_true',help='flag to enable coreference information')
     arg_parser.add_argument('--prop',action='store_true',help='flag to enable semantic role labeling information')
@@ -166,7 +166,10 @@ def main():
             mem = Memory(cachedir=args.cache_dir, verbose=0)
         except:
             mem = None
-        batch_preprocess(amr_file, mem)
+        print "Calling batch_preprocess"
+        for instances, amr_path in gen_instances_path(amr_file, mem):
+            print "Done preprocessing:%s" % amr_path
+        print "Done batch preprocessing"
     # preprocess the JAMR aligned amr
     elif args.mode == 'test_gold_graph':     
         instances = preprocess(amr_file,False)
@@ -373,6 +376,29 @@ def main():
         
         #plt.hist(results)
         #plt.savefig('result.png')
+
+    elif args.mode == 'batch_parse':
+        try:
+            from joblib import Memory
+            mem = Memory(cachedir=args.cache_dir, verbose=0)
+        except:
+            mem = None
+        print >> experiment_log, "Loading model: ", args.model
+        model = Model.load_model(args.model)
+        parser = Parser(model=model,oracle_type=DET_T2G_ORACLE_ABT,
+                        action_type=args.actionset,
+                        verbose=args.verbose,elog=experiment_log,
+                        mem=mem)
+        print >> experiment_log ,"BEGIN BATCH PARSING"
+        for instances, amr_path in gen_instances_path(amr_file,mem):
+            print >> experiment_log, "PREPROCESSED:", amr_path
+            span_graph_pairs,results = parser.parse_corpus_test(instances)
+            print >> experiment_log, "PARSED:", amr_path
+            write_parsed_amr(results,instances,amr_path,
+                             suffix='%s.parsed'%(args.section))
+            print >> experiment_log, "WROTE AMR OUTPUT FOR:", amr_path
+
+        print >> experiment_log ,"DONE BATCH PARSING"
 
     elif args.mode == 'eval':
         '''break down error analysis'''

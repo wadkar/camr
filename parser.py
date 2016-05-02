@@ -32,7 +32,12 @@ class Parser(object):
     rtx = None # array for store the rumtime data
     rty = None #
     
-    def __init__(self,model=None,oracle_type=DETERMINE_TREE_TO_GRAPH_ORACLE_SC,action_type='basic',verbose=1,elog=sys.stdout):
+    def __init__(self,model=None,
+                 oracle_type=DETERMINE_TREE_TO_GRAPH_ORACLE_SC,
+                 action_type='basic',verbose=1,elog=sys.stdout,
+                 mem=None):
+        if mem is not None:
+            self.parse = mem.cache(self.parse)
         self.sent = ''
         self.oracle_type=oracle_type
         self.verbose = verbose

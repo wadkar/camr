@@ -154,11 +154,8 @@ class StanfordCoreNLP(object):
     """
 
 
-    def __init__(self, mem=None):
+    def __init__(self):
         Data.current_sen = 1
-        if mem is not None:
-            self._parse = mem.cache(self._parse)
-        pass
         
     def setup(self):
         """
